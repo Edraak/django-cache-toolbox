@@ -2,6 +2,7 @@
 
 from setuptools import setup, find_packages
 
+
 setup(
     name='django-cache-toolbox',
     description="Non-magical object caching for Django.",
@@ -13,9 +14,12 @@ setup(
     license='BSD',
 
     packages=find_packages(exclude=('tests',)),
-
+    dependency_links=[
+        "git+https://github.com/edx/opaque-keys.git@1254ed4d615a428591850656f39f26509b86d30a#egg=opaque-keys-1.0.0",
+    ],
     install_requires=(
         "Django>=1.8",
+        "opaque-keys==1.0.0",
     ),
 
     test_suite='tests',
