@@ -24,6 +24,7 @@ Usage
 
     cache_relation(User.foo)
 
+(``primary_key`` being ``True`` is currently required.)
 ::
 
     >>> user = User.objects.get(pk=1)
@@ -93,31 +94,32 @@ def cache_relation(descriptor, timeout=None):
         except AttributeError:
             pass
 
-#        import logging
-#        log = logging.getLogger("tracking")
-#        log.info( "DEBUG: "+str(str(rel.model)+"/"+str(self.pk) ))
-
-        instance = get_instance(rel.model, self.pk, timeout)
+        instance = get_instance(
+            rel.field.model,
+            self.pk,
+            timeout,
+            using=self._state.db,
+        )
 
         setattr(self, '_%s_cache' % related_name, instance)
 
         return instance
-    setattr(rel.parent_model, related_name, get)
+    setattr(rel.to, related_name, get)
 
     # Clearing cache
 
     def clear(self):
-        delete_instance(rel.model, self)
+        delete_instance(rel.related_model, self)
 
     @classmethod
     def clear_pk(cls, *instances_or_pk):
-        delete_instance(rel.model, *instances_or_pk)
+        delete_instance(rel.related_model, *instances_or_pk)
 
     def clear_cache(sender, instance, *args, **kwargs):
-        delete_instance(rel.model, instance)
+        delete_instance(rel.related_model, instance)
 
-    setattr(rel.parent_model, '%s_clear' % related_name, clear)
-    setattr(rel.parent_model, '%s_clear_pk' % related_name, clear_pk)
+    setattr(rel.to, '%s_clear' % related_name, clear)
+    setattr(rel.to, '%s_clear_pk' % related_name, clear_pk)
 
-    post_save.connect(clear_cache, sender=rel.model, weak=False)
-    post_delete.connect(clear_cache, sender=rel.model, weak=False)
+    post_save.connect(clear_cache, sender=rel.related_model, weak=False)
+    post_delete.connect(clear_cache, sender=rel.related_model, weak=False)

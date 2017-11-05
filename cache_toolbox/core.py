@@ -8,12 +8,18 @@ Core methods
 
 """
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 from django.core.cache import cache
 from django.db import DEFAULT_DB_ALIAS
-from opaque_keys import InvalidKeyError
 
 from . import app_settings
 
+
+CACHE_FORMAT_VERSION = 2
 
 def get_instance(model, instance_or_pk, timeout=None, using=None):
     """
@@ -33,8 +39,8 @@ def get_instance(model, instance_or_pk, timeout=None, using=None):
         <User: lamby>
         >>> User.objects.get(pk=1) == get_instance(User, 1)
         True
-
     """
+
     pk = getattr(instance_or_pk, 'pk', instance_or_pk)
     key = instance_key(model, instance_or_pk)
     data = cache.get(key)
@@ -42,7 +48,7 @@ def get_instance(model, instance_or_pk, timeout=None, using=None):
     if data is not None:
         try:
             # Try and construct instance from dictionary
-            instance = model(pk=pk, **data)
+            instance = model(pk=pk, **pickle.loads(data))
 
             # Ensure instance knows that it already exists in the database,
             # otherwise we will fail any uniqueness checks when saving the
@@ -59,12 +65,7 @@ def get_instance(model, instance_or_pk, timeout=None, using=None):
             # fallback and return the underlying instance
             cache.delete(key)
 
-    # Use the default manager so we are never filtered by a .get_queryset()
-
-#    import logging
-#    log = logging.getLogger("tracking")
-#    log.info( str(pk) )
-
+    # Use the default manager so we are never filtered by a .get_query_set()
     instance = model._default_manager.using(using).get(pk=pk)
 
     data = {}
@@ -74,18 +75,18 @@ def get_instance(model, instance_or_pk, timeout=None, using=None):
         if field.primary_key:
             continue
 
-        if field.get_internal_type() == 'FileField':
-            # Avoid problems with serializing FileFields
-            # by only serializing the file name
-            file = getattr(instance, field.attname)
-            data[field.attname] = file.name
-        else:
-            data[field.attname] = getattr(instance, field.attname)
+        # We also don't want to save any virtual fields.
+        if not field.concrete:
+            continue
+
+        data[field.attname] = getattr(instance, field.attname)
 
     if timeout is None:
         timeout = app_settings.CACHE_TOOLBOX_DEFAULT_TIMEOUT
 
-    cache.set(key, data, timeout)
+    # Encode through Pickle, since that allows overriding and covers (most)
+    # Python types we'd want to serialise.
+    cache.set(key, pickle.dumps(data, protocol=-1), timeout)
 
     return instance
 
@@ -94,6 +95,7 @@ def delete_instance(model, *instance_or_pk):
     """
     Purges the cache keys for the instances of this model.
     """
+
     cache.delete_many([instance_key(model, x) for x in instance_or_pk])
 
 
@@ -101,36 +103,10 @@ def instance_key(model, instance_or_pk):
     """
     Returns the cache key for this (model, instance) pair.
     """
-    # pylint: disable=protected-access
-    return '%s.%s:%d' % (
+
+    return 'cache.%d:%s.%s:%s' % (
+        CACHE_FORMAT_VERSION,
         model._meta.app_label,
         model._meta.model_name,
         getattr(instance_or_pk, 'pk', instance_or_pk),
     )
-
-
-def set_cached_content(content):
-    cache.set(unicode(content.location).encode("utf-8"), content)
-
-
-def get_cached_content(location):
-    return cache.get(unicode(location).encode("utf-8"))
-
-
-def del_cached_content(location):
-    """
-    delete content for the given location, as well as for content with run=None.
-    it's possible that the content could have been cached without knowing the
-    course_key - and so without having the run.
-    """
-    def location_str(loc):
-        return unicode(loc).encode("utf-8")
-
-    locations = [location_str(location)]
-    try:
-        locations.append(location_str(location.replace(run=None)))
-    except InvalidKeyError:
-        # although deprecated keys allowed run=None, new keys don't if there is no version.
-        pass
-
-    cache.delete_many(locations)
