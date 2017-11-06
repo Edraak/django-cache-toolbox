@@ -11,11 +11,10 @@ pip install -e git+https://github.com/Edraak/django-cache-toolbox.git@1.0.0#egg=
 ## Usage
 
 in your settings.py do the following:
-1. Comment out these authentication middleware:
-    - django.contrib.auth.middleware.AuthenticationMiddleware
-    - django.contrib.auth.middleware.SessionAuthenticationMiddleware
+1. Comment out this authentication middleware:
+    - `django.contrib.auth.middleware.AuthenticationMiddleware`
 1. Add the following authentication middleware:
-    - cache_toolbox.middleware.CacheBackedAuthenticationMiddleware
+    - `cache_toolbox.middleware.CacheBackedAuthenticationMiddleware`
 1. Add `cache_toolbox` to your `INSTALLED_APPS`.
 1. Set `SESSION_ENGINE`'s value to `'django.contrib.sessions.backends.cache'`.
 1. Set `SESSION_COOKIE_NAME`'s value to `'sessionid'`
@@ -36,8 +35,6 @@ MIDDLEWARE_CLASSES = [
     # ...
     'cache_toolbox.middleware.CacheBackedAuthenticationMiddleware',
     # 'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     # ...
 ]
 ```
