@@ -5,7 +5,8 @@ This project is some sort of a clone of [django-cache-toolbox](https://pypi.pyth
 ## Installation
 
 ```bash
-pip install -e git+https://github.com/Edraak/django-cache-toolbox.git@1.0.0#egg=cache_toolbox --process-dependency-links 
+$ pip install git+https://github.com/edx/opaque-keys.git@1254ed4d615a428591850656f39f26509b86d30a#egg=opaque-keys
+$ pip install -e git+https://github.com/Edraak/django-cache-toolbox.git@1.0.0#egg=cache_toolbox 
 ```
 
 ## Usage
