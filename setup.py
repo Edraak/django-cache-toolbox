@@ -15,11 +15,11 @@ setup(
 
     packages=find_packages(exclude=('tests',)),
     dependency_links=[
-        "git+https://github.com/edx/opaque-keys.git@1254ed4d615a428591850656f39f26509b86d30a#egg=opaque-keys-1.0.0",
+        "git+https://github.com/edx/opaque-keys.git@1254ed4d615a428591850656f39f26509b86d30a#egg=opaque-keys-0.1.2",
     ],
     install_requires=(
         "Django>=1.8",
-        "opaque-keys==1.0.0",
+        "opaque-keys==0.1.2",
     ),
 
     test_suite='tests',
